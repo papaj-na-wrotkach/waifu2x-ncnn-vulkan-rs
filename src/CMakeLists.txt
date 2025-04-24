@@ -14,6 +14,7 @@ find_package(Threads)
 find_package(OpenMP)
 find_package(Vulkan REQUIRED)
 find_package(ncnn REQUIRED)
+find_package(glslang REQUIRED)
 
 macro(waifu2x_add_shader SHADER_SRC)
     get_filename_component(SHADER_SRC_NAME_WE ${SHADER_SRC} NAME_WE)
@@ -52,28 +53,6 @@ else ()
     message(WARNING "IPO is not supported: ${ipo_supported_output}")
 endif ()
 
-set(GLSLANG_TARGET_DIR "GLSLANG-NOTFOUND" CACHE PATH "Absolute path to glslangTargets.cmake directory")
-if (NOT GLSLANG_TARGET_DIR AND NOT DEFINED ENV{GLSLANG_TARGET_DIR})
-    message(FATAL_ERROR "GLSLANG_TARGET_DIR must be defined!")
-else ()
-    message(STATUS "Using glslang install located at ${GLSLANG_TARGET_DIR}")
-
-    find_package(Threads)
-
-    include("${GLSLANG_TARGET_DIR}/OSDependentTargets.cmake")
-    include("${GLSLANG_TARGET_DIR}/OGLCompilerTargets.cmake")
-    if (EXISTS "${GLSLANG_TARGET_DIR}/HLSLTargets.cmake")
-        # hlsl support can be optional
-        include("${GLSLANG_TARGET_DIR}/HLSLTargets.cmake")
-    endif ()
-    include("${GLSLANG_TARGET_DIR}/glslangTargets.cmake")
-    include("${GLSLANG_TARGET_DIR}/SPIRVTargets.cmake")
-
-    if (NOT TARGET glslang OR NOT TARGET SPIRV)
-        message(FATAL_ERROR "glslang or SPIRV target not found!")
-    endif ()
-endif ()
-
 waifu2x_add_shader(waifu2x_preproc.comp)
 waifu2x_add_shader(waifu2x_postproc.comp)
 waifu2x_add_shader(waifu2x_preproc_tta.comp)
@@ -85,7 +64,7 @@ add_library(waifu2x-ncnn-vulkan-wrapper STATIC waifu2x_wrapped.cpp waifu2x-ncnn-
 
 add_dependencies(waifu2x-ncnn-vulkan-wrapper generate-spirv)
 
-set(WAIFU2X_LINK_LIBRARIES ncnn webp ${Vulkan_LIBRARY})
+set(WAIFU2X_LINK_LIBRARIES ncnn webp ${Vulkan_LIBRARY} glslang::glslang glslang::SPIRV)
 
 target_link_libraries(waifu2x-ncnn-vulkan-wrapper ${WAIFU2X_LINK_LIBRARIES})
 
